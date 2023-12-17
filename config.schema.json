@@ -1,15 +1,49 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "SuplaPlatform",
   "pluginType": "platform",
   "singular": true,
   "schema": {
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+    "name": {
+      "title": "Name",
+      "type": "string",
+      "default": "Supla"
+    },
+    "host": {
+      "title": "Host",
+      "type": "string",
+      "default": "https://svr24.supla.org"
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "title": "Devices",
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "title": "Display Name",
+            "type": "string",
+            "default": "My Device"
+          },
+          "directLinkId": {
+            "type": "string",
+            "required": true
+          },
+          "password": {
+            "type": "string",
+            "required": true
+          },
+          "deviceType": {
+            "title": "Device Type",
+            "type": "string",
+            "enum": [
+              "light",
+              "garage-door",
+              "wicket"
+            ],
+            "default": "light",
+            "required": true
+          }
+        }
       }
     }
   }
