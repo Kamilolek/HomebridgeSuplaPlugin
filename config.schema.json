@@ -11,40 +11,22 @@
     "host": {
       "title": "Host",
       "type": "string",
-      "default": "https://svr24.supla.org"
+      "default": "mqtt24.supla.org"
     },
-    "devices": {
-      "type": "array",
-      "items": {
-        "title": "Devices",
-        "type": "object",
-        "properties": {
-          "displayName": {
-            "title": "Display Name",
-            "type": "string",
-            "default": "My Device"
-          },
-          "directLinkId": {
-            "type": "string",
-            "required": true
-          },
-          "password": {
-            "type": "string",
-            "required": true
-          },
-          "deviceType": {
-            "title": "Device Type",
-            "type": "string",
-            "enum": [
-              "light",
-              "garage-door",
-              "wicket"
-            ],
-            "default": "light",
-            "required": true
-          }
-        }
-      }
+    "port": {
+        "title": "Port",
+        "type": "string",
+        "default": 8883
+    },
+    "username": {
+      "title": "Username",
+      "type": "string",
+      "default": "admin"
+    },
+    "password": {
+      "title": "Password",
+      "type": "string",
+      "default": "admin"
     }
   }
 }

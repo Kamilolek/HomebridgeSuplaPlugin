@@ -1,13 +1,16 @@
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { SuplaPlatform } from './platform';
-import { SuplaDirectLinkRequestHandler, LightState } from './SuplaDirectLinkRequestHandler';
+import { SuplaPlatform } from '../platform';
+
+import {SuplaChannelContext} from '../Heplers/SuplaChannelContext';
 
 export class LightAccesory {
   private service: Service;
+  private state = false;
 
   constructor(
         private readonly platform: SuplaPlatform,
         private readonly accessory: PlatformAccessory,
+        private readonly context: SuplaChannelContext,
   ) {
         this.accessory.getService(this.platform.Service.AccessoryInformation)!
           .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Supla')
@@ -21,21 +24,28 @@ export class LightAccesory {
         this.service.getCharacteristic(this.platform.Characteristic.On)
           .onGet(this.handleOnGet.bind(this))
           .onSet(this.handleOnSet.bind(this));
+
+        setTimeout(() => {
+          this.platform.MqttClient.client.subscribe(`${this.context.topic}/state/on`);
+          this.platform.MqttClient.client.on('message', (topic, message) => {
+            if (topic === `${this.accessory.context.device.topic}/state/on`){
+              this.state = message.toString() === 'true';
+              this.service.updateCharacteristic(this.platform.Characteristic.On, this.state);
+            }
+          });
+        }, 3000);
   }
 
   async handleOnGet(): Promise<CharacteristicValue> {
-    const host = this.platform.config.host;
-    const id = this.accessory.context.device.directLinkId;
-    const password = this.accessory.context.device.password;
-    const lightState = await SuplaDirectLinkRequestHandler.getLightState(host, id, password);
-    return lightState === LightState.ON ? true : false;
+    return this.state;
   }
 
   async handleOnSet(value: CharacteristicValue) {
-    this.platform.log.debug('Set On:', value);
-    const host = this.platform.config.host;
-    const id = this.accessory.context.device.directLinkId;
-    const password = this.accessory.context.device.password;
-    SuplaDirectLinkRequestHandler.setLightState(host, id, password);
+    this.platform.MqttClient.client.publish(
+      `${this.accessory.context.device.topic}/set/on`,
+      value.toString());
+    setTimeout(() => {
+      this.service.updateCharacteristic(this.platform.Characteristic.On, this.state);
+    }, 300);
   }
 }

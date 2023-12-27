@@ -1,9 +1,14 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { GarageDoorOpenerAccesory } from './GarageDoorOpenerAccesory';
-import { LightAccesory } from './LightBulbAccesory';
-import { WicketAccesory } from './WicketAccesory';
+import { GarageDoorOpenerAccesory } from './Accesories/GarageDoorOpenerAccesory';
+import { LightAccesory } from './Accesories/LightBulbAccesory';
+import * as fs from 'fs';
+import {SuplaMqttClient} from './Heplers/SuplaMqttClient';
+import {RGBLightAccesory} from './Accesories/RGBLightBulbAccesory';
+import {WicketAccesory} from './Accesories/WicketAccesory';
+import {SuplaMqttClientContext} from './Heplers/SuplaMqttClientContext';
+import {SuplaChannelContext} from './Heplers/SuplaChannelContext';
 
 
 /**
@@ -14,8 +19,8 @@ import { WicketAccesory } from './WicketAccesory';
 export class SuplaPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+  public MqttClient!: SuplaMqttClient;
 
-  // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
   constructor(
@@ -25,14 +30,20 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    // When this event is fired it means Homebridge has restored all cached accessories from disk.
-    // Dynamic Platform plugins should only register new accessories after this event was fired,
-    // in order to ensure they weren't added to homebridge already. This event can also be used
-    // to start discovery of new accessories.
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
-      // run the method to discover / register your devices as accessories
+
       this.discoverDevices();
+
+      const mqttSettings = this.config as unknown as SuplaMqttClientContext;
+      this.MqttClient = new SuplaMqttClient(mqttSettings, this.log);
+      this.MqttClient.discoverChannelsAsync().then((channels) => {
+        const configPath = this.api.user.configPath();
+        const config = JSON.parse(fs.readFileSync(configPath).toString());
+        config.platforms.find((platform) => platform.platform === 'SuplaPlatform').channels = JSON.stringify(channels);
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        this.log.info('Channels discovered and saved to config file');
+      });
     });
   }
 
@@ -53,44 +64,61 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    //const devices = this.config.devices;
-    const devices = this.config.devices;
+    let channels: Array<SuplaChannelContext> = [];
+    try {
+      channels = JSON.parse(this.config.channels) as Array<SuplaChannelContext>;
+    } catch (e) { /* empty */ }
+    this.log.info('Channels discovered:', channels.length);
     // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of devices) {
-      const uuid = this.api.hap.uuid.generate(device.displayName);
+    for (const channel of channels) {
+      const uuid = this.api.hap.uuid.generate(channel.channelCaption);
 
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
       if (existingAccessory) {
         this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
-        switch (device.deviceType) {
-          case 'garage-door':
-            new GarageDoorOpenerAccesory(this, existingAccessory, device);
+        switch (channel.channelFunction) {
+          case 'CONTROLLINGTHEGARAGEDOOR':
+            this.log.info('Restoring dsdssd accessory from cache:', existingAccessory.displayName);
+            new GarageDoorOpenerAccesory(this, existingAccessory, channel);
             break;
-          case 'light':
-            new LightAccesory(this, existingAccessory);
+          case 'CONTROLLINGTHEGATE':
+            new GarageDoorOpenerAccesory(this, existingAccessory, channel);
             break;
-          case 'wicket':
-            new WicketAccesory(this, existingAccessory, device);
+          case 'LIGHTSWITCH':
+            new LightAccesory(this, existingAccessory, channel);
+            break;
+          case 'CONTROLLINGTHEGATEWAYLOCK':
+            new WicketAccesory(this, existingAccessory, channel);
+            break;
+          case 'RGBLIGHTING':
+            new RGBLightAccesory(this, existingAccessory, channel);
             break;
           default:
         }
       } else {
-        this.log.info('Adding new accessory:', device.displayName);
+        this.log.info('Adding new accessory:', channel.channelCaption);
 
-        const accessory = new this.api.platformAccessory(device.displayName, uuid);
+        const accessory = new this.api.platformAccessory(channel.channelCaption, uuid);
 
-        accessory.context.device = device;
-        switch (device.deviceType) {
-          case 'garage-door':
-            new GarageDoorOpenerAccesory(this, accessory, device);
+        accessory.context.device = channel;
+        switch (channel.channelFunction) {
+          case 'CONTROLLINGTHEGARAGEDOOR':
+            this.log.info('Restoring dsdssd accessory from cache:', accessory.displayName);
+            new GarageDoorOpenerAccesory(this, accessory, channel);
             break;
-          case 'light':
-            new LightAccesory(this, accessory);
+          case 'CONTROLLINGTHEGATE':
+            new GarageDoorOpenerAccesory(this, accessory, channel);
             break;
-          case 'wicket':
-            new WicketAccesory(this, accessory, device);
+          case 'LIGHTSWITCH':
+            new LightAccesory(this, accessory, channel);
+            break;
+          case 'CONTROLLINGTHEGATEWAYLOCK':
+            new WicketAccesory(this, accessory, channel);
+            break;
+          case 'RGBLIGHTING':
+            new RGBLightAccesory(this, accessory, channel);
             break;
           default:
         }
@@ -99,7 +127,8 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
       }
     }
     const accessoriesToRemove =
-      this.accessories.filter(accessory => !devices.some(device => accessory.UUID === this.api.hap.uuid.generate(device.displayName)));
+      this.accessories.filter(accessory =>
+        !channels.some(channel => accessory.UUID === this.api.hap.uuid.generate(channel.channelCaption)));
     for (const accessory of accessoriesToRemove) {
       this.log.info('Removing existing accessory from cache:', accessory.displayName);
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);

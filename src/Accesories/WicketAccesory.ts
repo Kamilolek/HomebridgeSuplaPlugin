@@ -1,7 +1,7 @@
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { SuplaPlatform } from './platform';
-import { DoorState, SuplaDirectLinkRequestHandler } from './SuplaDirectLinkRequestHandler';
-import { SuplaDeviceContext } from './SuplaDeviceContext';
+import { SuplaPlatform } from '../platform';
+
+import {SuplaChannelContext} from '../Heplers/SuplaChannelContext';
 
 export class WicketAccesory {
   private service: Service;
@@ -9,7 +9,7 @@ export class WicketAccesory {
   constructor(
         private readonly platform: SuplaPlatform,
         private readonly accessory: PlatformAccessory,
-        private readonly context: SuplaDeviceContext,
+        private readonly context: SuplaChannelContext,
   ) {
         this.accessory.getService(this.platform.Service.AccessoryInformation)!
           .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Supla')
@@ -29,6 +29,17 @@ export class WicketAccesory {
 
         this.service.getCharacteristic(this.platform.Characteristic.ObstructionDetected)
           .onGet(this.handleObstructionDetectedGet.bind(this));
+
+        setTimeout(() => {
+          this.platform.MqttClient.client.subscribe(`${this.context.topic}/state/hi`);
+          this.platform.MqttClient.client.on('message', (topic, message) => {
+            if (topic === `${this.context.topic}/state/hi`) {
+              const state = message.toString() === 'true'
+                ? this.platform.Characteristic.CurrentDoorState.CLOSED : this.platform.Characteristic.CurrentDoorState.OPEN;
+              this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState, state);
+            }
+          });
+        }, 3000);
   }
 
   async handleCurrentDoorStateGet(): Promise<CharacteristicValue> {
@@ -39,19 +50,10 @@ export class WicketAccesory {
     return this.platform.Characteristic.TargetDoorState.CLOSED;
   }
 
-  async handleTargetDoorStateSet(value: CharacteristicValue) {
-    const host = this.platform.config.host;
-    const id = this.context.directLinkId;
-    const password = this.context.password;
-    SuplaDirectLinkRequestHandler.setDoorState(host, id, password);
-    setTimeout(() => {
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState,
-        this.platform.Characteristic.TargetDoorState.OPEN);
-    }, 500);
-    setTimeout(() => {
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState,
-        this.platform.Characteristic.TargetDoorState.CLOSED);
-    }, 5000);
+  async handleTargetDoorStateSet() {
+    this.platform.MqttClient.client.publish(
+      `${this.context.topic}/execute_action`,
+      'open');
   }
 
   async handleObstructionDetectedGet(): Promise<CharacteristicValue> {
