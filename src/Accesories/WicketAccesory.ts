@@ -29,17 +29,6 @@ export class WicketAccesory {
 
         this.service.getCharacteristic(this.platform.Characteristic.ObstructionDetected)
           .onGet(this.handleObstructionDetectedGet.bind(this));
-
-        setTimeout(() => {
-          this.platform.MqttClient.client.subscribe(`${this.context.topic}/state/hi`);
-          this.platform.MqttClient.client.on('message', (topic, message) => {
-            if (topic === `${this.context.topic}/state/hi`) {
-              const state = message.toString() === 'true'
-                ? this.platform.Characteristic.CurrentDoorState.CLOSED : this.platform.Characteristic.CurrentDoorState.OPEN;
-              this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState, state);
-            }
-          });
-        }, 3000);
   }
 
   async handleCurrentDoorStateGet(): Promise<CharacteristicValue> {
@@ -54,6 +43,14 @@ export class WicketAccesory {
     this.platform.MqttClient.client.publish(
       `${this.context.topic}/execute_action`,
       'open');
+    this.service.updateCharacteristic(
+      this.platform.Characteristic.CurrentDoorState,
+      this.platform.Characteristic.CurrentDoorState.OPEN);
+    setTimeout(() => {
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.CurrentDoorState,
+        this.platform.Characteristic.CurrentDoorState.CLOSED);
+    }, 1000);
   }
 
   async handleObstructionDetectedGet(): Promise<CharacteristicValue> {

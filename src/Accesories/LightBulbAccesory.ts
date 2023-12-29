@@ -29,6 +29,7 @@ export class LightAccesory {
           this.platform.MqttClient.client.subscribe(`${this.context.topic}/state/on`);
           this.platform.MqttClient.client.on('message', (topic, message) => {
             if (topic === `${this.accessory.context.device.topic}/state/on`){
+              this.platform.log.info(`Light ${this.context.channelCaption} state changed to ${message.toString()}`);
               this.state = message.toString() === 'true';
               this.service.updateCharacteristic(this.platform.Characteristic.On, this.state);
             }
