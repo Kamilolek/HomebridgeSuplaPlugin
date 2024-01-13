@@ -5,6 +5,7 @@ import {SuplaChannelContext} from './SuplaChannelContext';
 
 export class SuplaMqttClient {
   public client: MqttClient;
+  private allowedChanelFunctions = ['CONTROLLINGTHEGARAGEDOOR', 'CONTROLLINGTHEGATE', 'LIGHTSWITCH', 'CONTROLLINGTHEGATEWAYLOCK', 'RGBLIGHTING'];
   constructor(
     private readonly context : SuplaMqttClientContext,
     private readonly log : Logger) {
@@ -64,6 +65,9 @@ export class SuplaMqttClient {
         // eslint-disable-next-line max-len
         topic.topic === `supla/${this.context.username}/devices/${channel.deviceId}/channels/${channel.channelId}/caption`)?.message ?? 'unknown';
       const topic = `supla/${this.context.username}/devices/${channel.deviceId}/channels/${channel.channelId}`;
+      if (this.allowedChanelFunctions.indexOf(channelFunction) === -1) {
+        return;
+      }
       result.push(new SuplaChannelContext(topic, channelType, channelFunction, caption));
     });
     return result;
