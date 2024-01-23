@@ -5,6 +5,7 @@ import {SuplaChannelContext} from './SuplaChannelContext';
 
 export class SuplaMqttClient {
   public client: MqttClient;
+  // eslint-disable-next-line max-len
   private allowedChanelFunctions = ['CONTROLLINGTHEGARAGEDOOR', 'CONTROLLINGTHEGATE', 'LIGHTSWITCH', 'CONTROLLINGTHEGATEWAYLOCK', 'RGBLIGHTING', 'DIMMER'];
   constructor(
     private readonly context : SuplaMqttClientContext,

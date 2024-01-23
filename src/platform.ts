@@ -97,7 +97,7 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
             new RGBLightAccesory(this, existingAccessory, channel);
             break;
           case 'DIMMER':
-            new DimmerAccessory(this, existingAccessory, channel)
+            new DimmerAccessory(this, existingAccessory, channel);
             break;
           default:
         }
@@ -125,7 +125,7 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
             new RGBLightAccesory(this, accessory, channel);
             break;
           case 'DIMMER':
-            new DimmerAccessory(this, accessory, channel)
+            new DimmerAccessory(this, accessory, channel);
             break;
           default:
         }
