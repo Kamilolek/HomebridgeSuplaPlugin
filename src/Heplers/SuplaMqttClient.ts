@@ -15,6 +15,9 @@ export class SuplaMqttClient {
       password: context.password,
     };
     this.client = mqtt.connect(`mqtts://${context.host}:${context.port}`, options);
+
+    this.client.setMaxListeners(20);
+
     this.client.on('connect', () => {
       this.log.info('MQTT client connected');
     });
