@@ -9,6 +9,7 @@ import {RGBLightAccesory} from './Accesories/RGBLightBulbAccesory';
 import {WicketAccesory} from './Accesories/WicketAccesory';
 import {SuplaMqttClientContext} from './Heplers/SuplaMqttClientContext';
 import {SuplaChannelContext} from './Heplers/SuplaChannelContext';
+import {DimmerAccessory} from './Accesories/DimmerAccessory';
 
 
 /**
@@ -95,6 +96,9 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
           case 'RGBLIGHTING':
             new RGBLightAccesory(this, existingAccessory, channel);
             break;
+          case 'DIMMER':
+            new DimmerAccessory(this, existingAccessory, channel)
+            break;
           default:
         }
       } else {
@@ -119,6 +123,9 @@ export class SuplaPlatform implements DynamicPlatformPlugin {
             break;
           case 'RGBLIGHTING':
             new RGBLightAccesory(this, accessory, channel);
+            break;
+          case 'DIMMER':
+            new DimmerAccessory(this, accessory, channel)
             break;
           default:
         }

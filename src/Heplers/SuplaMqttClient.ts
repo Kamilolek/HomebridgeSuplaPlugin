@@ -5,7 +5,7 @@ import {SuplaChannelContext} from './SuplaChannelContext';
 
 export class SuplaMqttClient {
   public client: MqttClient;
-  private allowedChanelFunctions = ['CONTROLLINGTHEGARAGEDOOR', 'CONTROLLINGTHEGATE', 'LIGHTSWITCH', 'CONTROLLINGTHEGATEWAYLOCK', 'RGBLIGHTING'];
+  private allowedChanelFunctions = ['CONTROLLINGTHEGARAGEDOOR', 'CONTROLLINGTHEGATE', 'LIGHTSWITCH', 'CONTROLLINGTHEGATEWAYLOCK', 'RGBLIGHTING', 'DIMMER'];
   constructor(
     private readonly context : SuplaMqttClientContext,
     private readonly log : Logger) {
