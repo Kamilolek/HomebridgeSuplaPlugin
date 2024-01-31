@@ -68,8 +68,11 @@ export class SuplaMqttClient {
       const caption = topics.find((topic) =>
         // eslint-disable-next-line max-len
         topic.topic === `supla/${this.context.username}/devices/${channel.deviceId}/channels/${channel.channelId}/caption`)?.message ?? 'unknown';
+      const hidden = topics.find((topic) =>
+        // eslint-disable-next-line max-len
+        topic.topic === `supla/${this.context.username}/devices/${channel.deviceId}/channels/${channel.channelId}/hidden`)?.message ?? 'unknown';
       const topic = `supla/${this.context.username}/devices/${channel.deviceId}/channels/${channel.channelId}`;
-      if (this.allowedChanelFunctions.indexOf(channelFunction) === -1) {
+      if (this.allowedChanelFunctions.indexOf(channelFunction) === -1 || hidden === 'true') {
         return;
       }
       result.push(new SuplaChannelContext(topic, channelType, channelFunction, caption));
